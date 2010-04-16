@@ -1,0 +1,5 @@
+*.o
+moc_*
+ridetracker
+output
+*.swp
