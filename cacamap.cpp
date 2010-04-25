@@ -91,7 +91,7 @@ cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 	tileSize = 256;
 	QSize size(384,384);
 	resize(size);
-	zoom = 7;
+	zoom = 5;
 	manager = new QNetworkAccessManager(this);
 	loadingAnim.setFileName("loading.gif");
 	loadingAnim.setScaledSize(QSize(tileSize,tileSize));

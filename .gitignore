@@ -1,8 +1,14 @@
+#object files
 *.o
+#Qt's moc files
 moc_*
 cacamap
 output
+#vim tempfiles
 *.swp
+#Doxygen stuff
 cache
 html
 latex
+#Makefiles should be regenerated everytime someone clones the repo cause the paths in there wont be valid to others
+Makefile
