@@ -1,3 +1,22 @@
+/*
+Copyright 2010 Jean Fairlie jmfairlie@gmail.com
+
+CacaMap is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+*/
+
+
+/** @file cacamap.h
+* CacaMap is a Simple Qt OSM Map Widget 
+*/
+
 #ifndef CACAMAP_H
 #define CACAMAP_H
 
@@ -6,87 +25,134 @@
 #include <iostream>
 #include <vector>
 
-/*
- * The class cant be specified in great detail because I dont know the Qt API yet
- * just the general idea will be described, implementator should add to the  prototype as he deems fit
 
 
+/**
+* The quint32 version of QPoint
+*/
+
+struct longPoint
+{
+	quint32 x;/**< x coord. */
+	quint32 y;/**< y coord.*/
+	longPoint(quint32,quint32);
+};
+
+/**
+Helper struct that handles coordinate transformations
+*/
+struct myMercator
+{
+	static longPoint geoCoordToPixel(QPointF const &,int , int);
+	static QPointF pixelToGeoCoord(longPoint const &, int, int);
+};
+/**
+* Struct to define a range of consecutive tiles
+* It's used to identify which tiles are visible and need to be rendered/downlaoded
+* @see cacaMap::updateTilesToRender()
+*/
+struct tileSet
+{
+	int zoom;/**< zoom level.*/
+	qint32 top;/**< topmost row.*/
+	qint32 bottom;/**< bottommost row.*/
+	qint32 left;/**< leftmostcolumn. */
+	qint32 right;/**< rightmost column. */
+	int offsetx;/**< horizontal offset needed to align the tiles in the wiget.*/
+	int offsety;/**< vertical offset needed to align the tiles in the widget.*/
+};
+
+/**
+* Used to represent a specific %tile
+* @see cacaMap::tileCache
+*/
+struct tile
+{
+	int zoom;/**< zoom level.*/
+	qint32 x;/**< colum number.*/
+	qint32 y;/**< row number.*/
+	QString  url;/**<used to identify the %tile when it finishes downloading.*/
+};
+/**
+* maximum space allowed for caching tiles
+*/
+#define CACHE_MAX 1*1024*1024 //1MB
+/**
+Main map widget
+*/
+
+/** @note
+
+INITIAL REQUIREMENTS:
 
 Class should retrieve the tiles from the specified source (e.g. OSM, google)
-and cache them in the hard drive
-Class should keep track of which tiles are already on the cache in order to minimize downloads
+and cache them in the hard drive.
+Default source should be OSM.
+Class should keep track of which tiles are already on the cache in order to minimize downloads.
 
-The cache should have a maximum size (e.g 1, 2MB), when reached tiles not in use should be deleted
+The cache should have a maximum size (e.g 1, 2MB), when reached, tiles not in use should be deleted
 
 The current location should be depicted always in the middle of the widget.
 If Widget is bigger than the tiles to be shown or one of the edges is visible 
 then tiles should be repeated horizontally and/or vertically as needed
 
-Map should be draggable, when dragging or zooming images that are not cached should be queued for download, and a 'loading' place holder image should be shown in their place
-Images that are not available should be marked so they are not requested further, an a 'not available' image should be showed instead . 
+Map should be draggable, when dragging or zooming images that are not cached should be queued 
+for download, and a 'loading' place holder image should be shown in their place
+Images that are not available should be marked so they are not requested further, an 
+a 'not available' image should be showed instead . 
 
-Default source should be OSM
 
-pre downloading tiles for all zoom levels for a specific geocoordinate should be evaluated, based on the widgets performance. Maybe different policies could be implemented aused depending on some variable/connection speed.
-
+pre downloading tiles for all zoom levels for a specific geocoordinate should be evaluated, 
+based on the widgets performance. Maybe different policies could be implemented to handle 
+different situations e.g. connection speeds.
 */
-struct longPoint
-{
-	quint32 x;
-	quint32 y;
-	longPoint(quint32,quint32);
-};
-
-
-class myMercator
-{
-	public:
-	static longPoint geoCoordToPixel(QPointF const &,int , int);
-	static QPointF pixelToGeoCoord(longPoint const &, int, int);
-};
-
-struct tileSet
-{
-	int zoom;
-	quint32 top;
-	quint32 bottom;
-	quint32 left;
-	quint32 right;
-	int offsetx;
-	int offsety;
-};
 
 class cacaMap : public QWidget
 {
 
 Q_OBJECT
+
 public:	
 	cacaMap(QWidget * _parent=0);
 	~cacaMap();
-	bool setGeoCoords(QSizeF);
-private:
-	QPoint mouse;
-	int zoom;
-	int tileSize;
-	//check QtMobility QGeoCoordinate
-	//latitude, longitude
-	QPointF geocoords;
-	QImage image;
-	QNetworkAccessManager *manager;
-	tileSet tilesToRender;
+	void setGeoCoords(QPointF);
+	bool zoomIn();
+	bool zoomOut();
+	bool setZoom(int level);
 
+private:
+	QPoint mouseAnchor;/**< used to keep track of the last mouse click location.*/
+	int zoom;/**< Map zoom level. */
+	int tileSize; /**< size in px of the square %tile. */
+	quint32 cacheSize;/**< current %tile cache size in bytes. */
+	//check QtMobility QGeoCoordinate
+	QPointF geocoords; /**< current longitude and latitude. */
+	QNetworkAccessManager *manager;/**< manages http requests. */
+	tileSet tilesToRender;/**< range of visible tiles. */
+	QHash<QString,int> tileCache;/**< list of cached tiles (in HDD). */
+	QHash<QString,tile> downloadQueue;/**< list of tiles waiting to be downloaded. */
+	QString tileFormat;/**< type of image file  (e.g. png,jpg). */
+	bool downloading;/**< flag that indicates if there is a download going on. */
+	QString folder;/**< root application folder. */
+	QMovie loadingAnim;/**< used to show a 'loading' animation for yet unavailable tiles. */
+        int minZoom;/**< Minimum zoom level (farthest away).*/
+	int maxZoom;/**< Maximum zoom level (closest).*/
 	void updateTilesToRender();
+	void renderMap(QPainter &);
+	void loadCache();
+	QString getTileUrl(int, int, int);
+
 protected:
 	
 	void resizeEvent(QResizeEvent*);
 	void paintEvent(QPaintEvent*);
-	void onMouseDrag(QMouseEvent*);
-	void onMouseRelease(QMouseEvent*);
-	void downloadPicture(QString const &);
+	void mousePressEvent(QMouseEvent*);
+	void mouseMoveEvent(QMouseEvent*);
+	void downloadPicture();
 
-public slots:
-	void dlProgress(qint64, qint64);
-	void downloadReady(QNetworkReply *);
+private slots:
+	void slotDownloadProgress(qint64, qint64);
+	void slotDownloadReady(QNetworkReply *);
 	void slotError(QNetworkReply::NetworkError);
 };
 #endif

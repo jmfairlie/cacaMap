@@ -1,5 +1,8 @@
 *.o
 moc_*
-ridetracker
+cacamap
 output
 *.swp
+cache
+html
+latex
