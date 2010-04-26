@@ -1,11 +1,10 @@
 #include <qapplication.h>
-#include "cacamap.h"
-
+#include "testwidget.h"
 
 int main (int argc, char **argv)
 {
 	QApplication a(argc, argv);
-	cacaMap myMap;
-	myMap.show();
+	testWidget myWidget;
+	myWidget.show();
 	return a.exec();
 }

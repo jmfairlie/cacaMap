@@ -78,7 +78,6 @@ QPointF myMercator::pixelToGeoCoord(longPoint const &pixelcoord, int zoom, int t
 */
 cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 {
-	cout<<"contructor "<<-100%1<<endl;
 	cacheSize = 0;
 	maxZoom = 18;
 	minZoom = 0;
@@ -89,9 +88,7 @@ cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 	downloading = false;
 	tileFormat = ".png";
 	tileSize = 256;
-	QSize size(384,384);
-	resize(size);
-	zoom = 2;
+	zoom = 0;
 	manager = new QNetworkAccessManager(this);
 	loadingAnim.setFileName("loading.gif");
 	loadingAnim.setScaledSize(QSize(tileSize,tileSize));
