@@ -91,7 +91,7 @@ cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 	tileSize = 256;
 	QSize size(384,384);
 	resize(size);
-	zoom = 5;
+	zoom = 0;
 	manager = new QNetworkAccessManager(this);
 	loadingAnim.setFileName("loading.gif");
 	loadingAnim.setScaledSize(QSize(tileSize,tileSize));
@@ -404,7 +404,6 @@ void cacaMap::slotError(QNetworkReply::NetworkError _code)
 }
 /**
 Widget Resize event handler
-Recalculates the range of visible tiles
 */
 void cacaMap::resizeEvent(QResizeEvent* event)
 {
@@ -422,7 +421,7 @@ void cacaMap::renderMap(QPainter &p)
 		{
 			QString x;
 			QString y;
-
+			//wrap around the tiles horizontally if i is negative
 			qint32 valx = (i<0)?((1<<zoom)+ i):i;
 			valx = (valx<(1<<zoom))?valx:valx-(1<<zoom);
 			x.setNum(valx);
@@ -430,46 +429,51 @@ void cacaMap::renderMap(QPainter &p)
 			QImage image;
 			int posx = (i-tilesToRender.left)*tileSize - tilesToRender.offsetx;
 			int posy =  (j-tilesToRender.top)*tileSize - tilesToRender.offsety;
-			QString tileid = QString().setNum(tilesToRender.zoom) +"."+x+"."+QString().setNum(j);
-			if (tileCache.contains(tileid))
+			//dont try to render tiles with y coords outside range
+			//cause we cant do vertical wrapping!
+			if (j>=0 && j<1<<zoom)
 			{
-				//render the tile
-				QDir::setCurrent(folder);
-				QString path =  "cache/osm/"+QString().setNum(tilesToRender.zoom) +"/"+x+"/";
-				QString fileName = QString().setNum(j)+tileFormat;
-				QDir::setCurrent(path);
-				QFile f(fileName);
-				if (f.open(QIODevice::ReadOnly))
+				QString tileid = QString().setNum(tilesToRender.zoom) +"."+x+"."+QString().setNum(j);
+				if (tileCache.contains(tileid))
 				{
-					
-					image.loadFromData(f.readAll());
-					f.close();
-									}
+					//render the tile
+					QDir::setCurrent(folder);
+					QString path =  "cache/osm/"+QString().setNum(tilesToRender.zoom) +"/"+x+"/";
+					QString fileName = QString().setNum(j)+tileFormat;
+					QDir::setCurrent(path);
+					QFile f(fileName);
+					if (f.open(QIODevice::ReadOnly))
+					{
+						
+						image.loadFromData(f.readAll());
+						f.close();
+										}
+					else
+					{
+						cout<<"no hay file "<<path.toStdString()<<endl;
+					}
+				}
 				else
 				{
-					cout<<"no hay file "<<path.toStdString()<<endl;
-				}
-			}
-			else
-			{
-				//check that the image hasnt been queued already
-				if (!downloadQueue.contains(tileid))
-				{
-					tile t;
-					t.zoom = tilesToRender.zoom;
-					t.x = valx;
-					t.y = j;
-					t.url = getTileUrl(tilesToRender.zoom,valx,j);
+					//check that the image hasnt been queued already
+					if (!downloadQueue.contains(tileid))
+					{
+						tile t;
+						t.zoom = tilesToRender.zoom;
+						t.x = valx;
+						t.y = j;
+						t.url = getTileUrl(tilesToRender.zoom,valx,j);
 
+						
+						//queue the image for download
+						downloadQueue.insert(tileid,t);
+
+					}
+					image = loadingAnim.currentImage();
 					
-					//queue the image for download
-					downloadQueue.insert(tileid,t);
-
 				}
-				image = loadingAnim.currentImage();
-				
+				p.drawImage(posx,posy,image);
 			}
-			p.drawImage(posx,posy,image);
 			p.drawRect(posx,posy,tileSize, tileSize);
 		}
 	}
