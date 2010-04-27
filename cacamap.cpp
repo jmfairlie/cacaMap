@@ -78,7 +78,7 @@ QPointF myMercator::pixelToGeoCoord(longPoint const &pixelcoord, int zoom, int t
 */
 cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 {
-	cout<<"contructor"<<endl;
+	cout<<"contructor "<<-100%1<<endl;
 	cacheSize = 0;
 	maxZoom = 18;
 	minZoom = 0;
@@ -91,7 +91,7 @@ cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 	tileSize = 256;
 	QSize size(384,384);
 	resize(size);
-	zoom = 0;
+	zoom = 2;
 	manager = new QNetworkAccessManager(this);
 	loadingAnim.setFileName("loading.gif");
 	loadingAnim.setScaledSize(QSize(tileSize,tileSize));
@@ -155,6 +155,14 @@ bool cacaMap::setZoom(int level)
 }
 
 /**
+* @return current geocoords
+*/
+QPointF cacaMap::getGeoCoords()
+{
+	return geocoords;
+}
+
+/**
 Saves the screen coordinates of the last click
 This is used for scrolling the map
 @see cacaMap::mouseMoveEvent()
@@ -165,27 +173,18 @@ void cacaMap::mousePressEvent(QMouseEvent* e)
 }
 
 /**
-Calculates the lenght of the mouse drag and
+Calculates the length of the mouse drag and
 translates it into a new coordinate, map is rerendered
 */
 void cacaMap::mouseMoveEvent(QMouseEvent* e)
 {
 	QPoint delta = e->pos()- mouseAnchor;
 	mouseAnchor = e->pos();
+	longPoint p = myMercator::geoCoordToPixel(geocoords,zoom,tileSize);
 	
-	qreal dx = - 180.0*(qreal)delta.x()/((1<<zoom)*tileSize);
-	qreal dy =  180.0*(qreal)delta.y()/((1<<zoom)*tileSize);
-	qreal  &x =  geocoords.rx();
-	qreal  &y = geocoords.ry();
-
-	x = ((x+dx)<-180)?360 + x+dx:x+dx;
-
-	x = ((x+dx)>180)?-360 + x+dx:x+dx;
-	
-	y = ((y+dy)<-85)?-85:y+dy;
-
-	y = ((y+dy)>85)?85:y+dy;
-
+	p.x-= delta.x();
+	p.y-= delta.y();
+	geocoords = myMercator::pixelToGeoCoord(p,zoom,tileSize);
 	updateTilesToRender();
 	update();
 }
@@ -421,9 +420,9 @@ void cacaMap::renderMap(QPainter &p)
 		{
 			QString x;
 			QString y;
-			//wrap around the tiles horizontally if i is negative
-			qint32 valx = (i<0)?((1<<zoom)+ i):i;
-			valx = (valx<(1<<zoom))?valx:valx-(1<<zoom);
+			//wrap around the tiles horizontally if i is outside [0,2^zoom]
+			qint32 valx =((i<0)*((1<<zoom)) + i%(1<<zoom))%(1<<zoom);
+			
 			x.setNum(valx);
 			
 			QImage image;

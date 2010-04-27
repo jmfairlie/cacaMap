@@ -6,6 +6,7 @@ cacamap
 output
 #vim tempfiles
 *.swp
+*.swo
 #Doxygen stuff
 cache
 html

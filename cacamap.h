@@ -119,6 +119,7 @@ public:
 	bool zoomIn();
 	bool zoomOut();
 	bool setZoom(int level);
+	QPointF getGeoCoords();
 
 private:
 	QPoint mouseAnchor;/**< used to keep track of the last mouse click location.*/
@@ -137,10 +138,13 @@ private:
 	QMovie loadingAnim;/**< used to show a 'loading' animation for yet unavailable tiles. */
         int minZoom;/**< Minimum zoom level (farthest away).*/
 	int maxZoom;/**< Maximum zoom level (closest).*/
+	
+	
 	void updateTilesToRender();
 	void renderMap(QPainter &);
 	void loadCache();
 	QString getTileUrl(int, int, int);
+
 
 protected:
 	
