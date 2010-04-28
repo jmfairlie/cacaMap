@@ -16,8 +16,10 @@ GNU General Public License for more details.
 #define TESTWIDGET_H
 
 #include <QtGui>
-#include "cacamap.h"
+#include "myderivedmap.h"
+#include <iostream>
 
+using namespace std;
 
 class testWidget: public QWidget
 {
@@ -26,9 +28,11 @@ public:
 	testWidget(QWidget* parent=0);
 	~testWidget();
 private:
-	cacaMap*  map;
+	myDerivedMap*  map;
 	QHBoxLayout * layout;
 	QSlider * slider;
+protected:
+	void paintEvent(QPaintEvent*);
 private slots:
 	void setZoom(int);
 };

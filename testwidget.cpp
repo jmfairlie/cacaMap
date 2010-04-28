@@ -15,8 +15,9 @@ GNU General Public License for more details.
 
 testWidget::testWidget(QWidget* parent):QWidget(parent)
 {
-	map = new cacaMap(this);
+	map = new myDerivedMap(this);
 	slider = new QSlider(Qt::Vertical,this);
+	slider->setTickPosition(QSlider::TicksBothSides);
 	slider->setMaximum(18);
 	slider->setMinimum(0);
 	connect(slider, SIGNAL(valueChanged(int)),this, SLOT(setZoom(int)));
@@ -29,6 +30,16 @@ testWidget::testWidget(QWidget* parent):QWidget(parent)
 	setLayout(layout);
 	QSize size(384,384);
 	resize(size);
+}
+
+void testWidget::paintEvent(QPaintEvent*)
+{
+	QPainter painter(this);
+	//painter.setViewport(map->rect());
+	//map->renderMap(painter);
+	
+	//painter.drawRect(10,10,110,110);
+	//cout<<"paint testwidget!"<<endl;
 }
 
 testWidget::~testWidget()

@@ -78,6 +78,7 @@ QPointF myMercator::pixelToGeoCoord(longPoint const &pixelcoord, int zoom, int t
 */
 cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 {
+	tileFolderName = "osm";
 	cacheSize = 0;
 	maxZoom = 18;
 	minZoom = 0;
@@ -93,7 +94,6 @@ cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 	loadingAnim.setFileName("loading.gif");
 	loadingAnim.setScaledSize(QSize(tileSize,tileSize));
 	loadingAnim.start();
-
 }
 
 /**
@@ -205,6 +205,17 @@ QString cacaMap::getTileUrl(int zoom, int x, int y)
 }
 
 /**
+*@param zoom zoom level
+*@param x tile x column
+*@return string with the path to the folder containing the tiles in 
+*for zoom level and x column
+*/
+QString cacaMap::getTilePath(int zoom,qint32 x)
+{
+	return "cache/"+tileFolderName+"/"+QString().setNum(zoom) +"/"+QString().setNum(x)+"/";
+}
+
+/**
 Starts downloading the next %tile in the queue
 @see cacaMap::downloadQueue
 */
@@ -285,6 +296,7 @@ Slot to keep track of download progress
 */
 void cacaMap::slotDownloadProgress(qint64 _bytesReceived, qint64 _bytesTotal)
 {
+	update();
 }
 
 /**
@@ -399,7 +411,7 @@ void cacaMap::slotError(QNetworkReply::NetworkError _code)
 	cout<<"some error "<<_code<<endl;
 }
 /**
-Widget Resize event handler
+Widget resize event handler
 */
 void cacaMap::resizeEvent(QResizeEvent* event)
 {
@@ -427,20 +439,20 @@ void cacaMap::renderMap(QPainter &p)
 			int posy =  (j-tilesToRender.top)*tileSize - tilesToRender.offsety;
 			//dont try to render tiles with y coords outside range
 			//cause we cant do vertical wrapping!
-			if (j>=0 && j<1<<zoom)
+			if (j>=0 && j<1<<tilesToRender.zoom)
 			{
 				QString tileid = QString().setNum(tilesToRender.zoom) +"."+x+"."+QString().setNum(j);
 				if (tileCache.contains(tileid))
 				{
 					//render the tile
 					QDir::setCurrent(folder);
-					QString path =  "cache/osm/"+QString().setNum(tilesToRender.zoom) +"/"+x+"/";
+					//check path format (windows?)
+					QString path= getTilePath(tilesToRender.zoom,valx) ;
 					QString fileName = QString().setNum(j)+tileFormat;
 					QDir::setCurrent(path);
 					QFile f(fileName);
 					if (f.open(QIODevice::ReadOnly))
 					{
-						
 						image.loadFromData(f.readAll());
 						f.close();
 										}
@@ -449,6 +461,7 @@ void cacaMap::renderMap(QPainter &p)
 						cout<<"no hay file "<<path.toStdString()<<endl;
 					}
 				}
+				//the tile is not cached so download it
 				else
 				{
 					//check that the image hasnt been queued already
@@ -470,9 +483,10 @@ void cacaMap::renderMap(QPainter &p)
 				}
 				p.drawImage(posx,posy,image);
 			}
-			p.drawRect(posx,posy,tileSize, tileSize);
+		//	p.drawRect(posx,posy,tileSize, tileSize);
 		}
 	}
+	p.drawRect(0,0,width()-1, height()-1);
 	if (!downloading)
 	{
 		downloadPicture();
@@ -481,10 +495,11 @@ void cacaMap::renderMap(QPainter &p)
 /**
 Paint even handler
 */
-void cacaMap::paintEvent(QPaintEvent* event)
+void cacaMap::paintEvent(QPaintEvent *event)
 {
-	QPainter painter(this);
-	renderMap(painter);
+	QPainter p(this);
+	renderMap(p);
+	cout<<"paint cacamap!"<<endl;
 }
 
 /**

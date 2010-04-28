@@ -114,8 +114,10 @@ Q_OBJECT
 
 public:	
 	cacaMap(QWidget * _parent=0);
-	~cacaMap();
+
+	virtual ~cacaMap();
 	void setGeoCoords(QPointF);
+	void renderMap(QPainter &);
 	bool zoomIn();
 	bool zoomOut();
 	bool setZoom(int level);
@@ -123,11 +125,6 @@ public:
 
 private:
 	QPoint mouseAnchor;/**< used to keep track of the last mouse click location.*/
-	int zoom;/**< Map zoom level. */
-	int tileSize; /**< size in px of the square %tile. */
-	quint32 cacheSize;/**< current %tile cache size in bytes. */
-	//check QtMobility QGeoCoordinate
-	QPointF geocoords; /**< current longitude and latitude. */
 	QNetworkAccessManager *manager;/**< manages http requests. */
 	tileSet tilesToRender;/**< range of visible tiles. */
 	QHash<QString,int> tileCache;/**< list of cached tiles (in HDD). */
@@ -138,23 +135,28 @@ private:
 	QMovie loadingAnim;/**< used to show a 'loading' animation for yet unavailable tiles. */
         int minZoom;/**< Minimum zoom level (farthest away).*/
 	int maxZoom;/**< Maximum zoom level (closest).*/
-	
+	QString tileFolderName;/**<Name of the folder where tiles are cached (e.g osm, google).*/	
 	
 	void updateTilesToRender();
-	void renderMap(QPainter &);
 	void loadCache();
 	QString getTileUrl(int, int, int);
+	QString getTilePath(int, qint32);
 
 
 protected:
-	
+	int zoom;/**< Map zoom level. */
+	int tileSize; /**< size in px of the square %tile. */
+	quint32 cacheSize;/**< current %tile cache size in bytes. */
+	//check QtMobility QGeoCoordinate
+	QPointF geocoords; /**< current longitude and latitude. */
+
 	void resizeEvent(QResizeEvent*);
-	void paintEvent(QPaintEvent*);
+	void paintEvent(QPaintEvent *);
 	void mousePressEvent(QMouseEvent*);
 	void mouseMoveEvent(QMouseEvent*);
 	void downloadPicture();
 
-private slots:
+protected slots:
 	void slotDownloadProgress(qint64, qint64);
 	void slotDownloadReady(QNetworkReply *);
 	void slotError(QNetworkReply::NetworkError);
