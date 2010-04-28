@@ -393,7 +393,7 @@ void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 		}
 		else
 		{
-			cout<<"no data"<<endl;
+			//cout<<"no data"<<endl;
 		}
 		update();
 	}
@@ -458,7 +458,7 @@ void cacaMap::renderMap(QPainter &p)
 										}
 					else
 					{
-						cout<<"no hay file "<<path.toStdString()<<endl;
+						cout<<"no file found "<<path.toStdString()<<endl;
 					}
 				}
 				//the tile is not cached so download it
@@ -499,7 +499,6 @@ void cacaMap::paintEvent(QPaintEvent *event)
 {
 	QPainter p(this);
 	renderMap(p);
-	cout<<"paint cacamap!"<<endl;
 }
 
 /**
@@ -508,7 +507,6 @@ destructor
 cacaMap::~cacaMap()
 {
 	delete manager;
-	cout<<"destructor"<<endl;
 }
 /**
 Figures out which tiles are visible
