@@ -28,9 +28,14 @@ public:
 	testWidget(QWidget* parent=0);
 	~testWidget();
 private:
+	void populateCombo();
+
 	myDerivedMap*  map;
-	QHBoxLayout * layout;
+	QHBoxLayout * hlayout;
+	QVBoxLayout * vlayout;
+
 	QSlider * slider;
+	QComboBox * combo;
 protected:
 	void paintEvent(QPaintEvent*);
 private slots:

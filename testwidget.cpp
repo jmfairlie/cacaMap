@@ -20,32 +20,48 @@ testWidget::testWidget(QWidget* parent):QWidget(parent)
 	slider->setTickPosition(QSlider::TicksBothSides);
 	slider->setMaximum(18);
 	slider->setMinimum(0);
+	slider->setSliderPosition(4);
 	connect(slider, SIGNAL(valueChanged(int)),this, SLOT(setZoom(int)));
+	
 
+	vlayout = new QVBoxLayout(this);
+	combo = new QComboBox(this);
+	populateCombo();
+	vlayout->addWidget(combo);
 
+	
 
-	layout = new QHBoxLayout(this);
-	layout->addWidget(slider);
-	layout->addWidget(map);
-	setLayout(layout);
+	hlayout = new QHBoxLayout();
+	hlayout->addWidget(slider);
+	hlayout->addWidget(map);
+
+	vlayout->addLayout(hlayout);
+
+	setLayout(vlayout);
+
 	QSize size(384,384);
 	resize(size);
+}
+
+void testWidget::populateCombo()
+{
+	
+	combo->addItem("Openstreetmaps",QVariant(1));
+	combo->addItem("Tiles at Home",QVariant(2));
+	combo->addItem("Google Maps",QVariant(3));
+	combo->addItem("Google Satellite",QVariant(4));
 }
 
 void testWidget::paintEvent(QPaintEvent*)
 {
 	QPainter painter(this);
-	//painter.setViewport(map->rect());
-	//map->renderMap(painter);
-	
-	//painter.drawRect(10,10,110,110);
-	//cout<<"paint testwidget!"<<endl;
 }
 
 testWidget::~testWidget()
 {
 	delete map;
-	delete layout;
+	delete hlayout;
+	delete vlayout;
 	delete slider;
 }
 

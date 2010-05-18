@@ -26,6 +26,10 @@ GNU General Public License for more details.
 #include <vector>
 
 
+/*
+*tile server id
+*/
+enum SERVER_TYPE {SERVER_OSM, SERVER_TAH,SERVER_MFF, SERVER_KARTAT02,SERVER_GMAPS, SERVER_GLAYER, SERVER_GSAT};
 
 /**
 * The quint32 version of QPoint
@@ -123,24 +127,27 @@ public:
 	bool setZoom(int level);
 	QPointF getGeoCoords();
 
+
 private:
 	QPoint mouseAnchor;/**< used to keep track of the last mouse click location.*/
 	QNetworkAccessManager *manager;/**< manages http requests. */
 	tileSet tilesToRender;/**< range of visible tiles. */
 	QHash<QString,int> tileCache;/**< list of cached tiles (in HDD). */
 	QHash<QString,tile> downloadQueue;/**< list of tiles waiting to be downloaded. */
-	QString tileFormat;/**< type of image file  (e.g. png,jpg). */
+	QHash<QString,int> unavailableTiles;/**< list of tiles that were not found on the server.*/
 	bool downloading;/**< flag that indicates if there is a download going on. */
 	QString folder;/**< root application folder. */
-	QMovie loadingAnim;/**< used to show a 'loading' animation for yet unavailable tiles. */
+	QMovie loadingAnim;/**< to show a 'loading' animation for yet unavailable tiles. */
+	QImage notAvailableTile;
         int minZoom;/**< Minimum zoom level (farthest away).*/
 	int maxZoom;/**< Maximum zoom level (closest).*/
-	QString tileFolderName;/**<Name of the folder where tiles are cached (e.g osm, google).*/	
-	
+	SERVER_TYPE server;	
 	void updateTilesToRender();
 	void loadCache();
 	QString getTileUrl(int, int, int);
 	QString getTilePath(int, qint32);
+	QString tileCacheFolder();
+	QString fileExtension();
 
 
 protected:
