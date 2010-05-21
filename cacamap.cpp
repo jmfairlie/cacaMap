@@ -78,7 +78,10 @@ QPointF myMercator::pixelToGeoCoord(longPoint const &pixelcoord, int zoom, int t
 */
 cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 {
-	server = SERVER_GMAPS;
+	if (!servermgr.loadConfigFile("tileservers.xml"))
+	{
+		std::cout<<"error loading server file."<<std::endl;
+	}
 	cacheSize = 0;
 	maxZoom = 18;
 	minZoom = 0;
@@ -105,7 +108,6 @@ void cacaMap::setGeoCoords(QPointF newcoords)
 	//geocoords.setY(newcoords.y());
 	geocoords = newcoords;
 }
-
 /**
 * zooms in one level
 * @return true if it zoomed succesfully, false otherwise (if maxZoom has been reached)
@@ -157,6 +159,24 @@ QPointF cacaMap::getGeoCoords()
 {
 	return geocoords;
 }
+/**
+*@return list of available tile server names
+*/
+QStringList cacaMap::getServerNames()
+{
+	return servermgr.getServerNames();		
+}
+/**
+* Change tile server to the one in index
+*/
+void cacaMap::setServer(int index)
+{
+	servermgr.selectServer(index);
+	downloadQueue.clear();
+	loadCache();
+	downloading = false;
+	update();
+}
 
 /**
 Saves the screen coordinates of the last click
@@ -185,49 +205,6 @@ void cacaMap::mouseMoveEvent(QMouseEvent* e)
 	update();
 }
 
-
-/**
-* Get URL of a specific %tile
-* @param zoom zoom level
-* @return string containing the url where the %tile image can be found.
-*/
-QString cacaMap::getTileUrl(int zoom, int x, int y)
-{
-	QString sz,sx,sy;
-	sz.setNum(zoom);
-	sx.setNum(x);
-	sy.setNum(y);
-	QString surl;
-	switch(server)
-	{
-		case SERVER_OSM:
-			surl= "http://tile.openstreetmap.org/"+sz+"/"+sx+"/"+sy+".png";
-			break;
-		case SERVER_TAH:
-			surl= "http://tah.openstreetmap.org/Tiles/tile/"+sz+"/"+sx+"/"+sy+".png";
-			break;
-		case SERVER_MFF:
-			surl= "http://maps-for-free.com/layer/relief/z"+sz+"/row"+sy+"/"+sz+"_"+sx+"-"+sy+".jpg";
-			break;
-		case SERVER_KARTAT02:
-			surl= "http://ed-map-fi.wide.basefarm.net/tiles//aerial/en_FI/"+sz+"/"+sx+"/"+sy+".jpeg";
-			break;
-		case SERVER_GMAPS:
-			surl="http://mt1.google.com/vt/x="+sx+"&y="+sy+"&z="+sz;
-			break;
-		case SERVER_GLAYER:
-			surl="http://mt1.google.com/vt/lyrs=h@126&x="+sx+"&y="+sy+"&z="+sz;
-			break;
-		case SERVER_GSAT:
-			surl="http://khm3.google.com/kh/v=60&x="+sx+"&y="+sy+"&z="+sz;
-			break;
-		default:
-			surl= QString("http://tile.openstreetmap.org/")+sz+"/"+sx+"/"+sy+".png";
-			break;
-	}
-	return surl;
-}
-
 /**
 *@param zoom zoom level
 *@param x tile x column
@@ -236,79 +213,8 @@ QString cacaMap::getTileUrl(int zoom, int x, int y)
 */
 QString cacaMap::getTilePath(int zoom,qint32 x)
 {
-	return "cache/"+tileCacheFolder()+"/"+QString().setNum(zoom) +"/"+QString().setNum(x)+"/";
+	return "cache/"+servermgr.tileCacheFolder()+servermgr.filePath(zoom,x);
 }
-/**
-*@return name of the cache folder for the given tile server
-*/
-QString cacaMap::tileCacheFolder()
-{
-	switch(server)
-	{
-		case SERVER_OSM:
-			return "osm";
-			break;
-		case SERVER_TAH:
-			return "tah";
-			break;
-		case SERVER_MFF:
-			return "mff";
-			break;
-		case SERVER_KARTAT02:
-			return "02";
-			break;
-		case SERVER_GMAPS:
-			return "gmaps";
-			break;
-		case SERVER_GLAYER:
-			return "glayer";
-			break;
-		case SERVER_GSAT:
-			return "gsat";
-			break;
-		default:
-			return "osm";
-		break;
-	}
-}
-
-/**
-* @return image format (e.g. png,jpg).
-*/
-QString cacaMap::fileExtension()
-{
-	switch(server)
-	{
-		case SERVER_OSM:
-			return "png";
-			break;
-		case SERVER_TAH:
-			return "png";
-			break;
-		case SERVER_MFF:
-			return "jpg";
-			break;
-		case SERVER_KARTAT02:
-			return "jpeg";
-			break;
-		case SERVER_GMAPS:
-			return "";
-			break;
-		case SERVER_GLAYER:
-			return "";
-			break;
-		case SERVER_GSAT:
-			return "";
-			break;
-
-
-		default:
-			return "png";
-		break;
-	}
-}
-
-
 
 /**
 Starts downloading the next %tile in the queue
@@ -349,11 +255,14 @@ Populates the cache list by checking the existing files on the cache folder
 */
 void cacaMap::loadCache()
 {
+	cacheSize=0;
+	unavailableTiles.clear();
+	tileCache.clear();
 	QDir::setCurrent(folder);
 	QDir dir;
 	if (dir.cd("cache"))
 	{
-		if (dir.cd(tileCacheFolder()))
+		if (dir.cd(servermgr.tileCacheFolder()))
 		{
 			QStringList zoom = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 			QString zoomLevel;
@@ -395,8 +304,8 @@ void cacaMap::slotDownloadProgress(qint64 _bytesReceived, qint64 _bytesTotal)
 }
 
 /**
-Slot that gets called everytime a %tile download request finishes
-Saves image file to HDD, takes out item from download queue, and  adds item to cache list
+* Slot that gets called everytime a %tile download request finishes
+* Saves image file to HDD, takes out item from download queue, and  adds item to cache list
 */
 void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 {
@@ -438,7 +347,7 @@ void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 				QString kk = i.key();
 				QString zdir = QString().setNum(nextItem.zoom);
 				QString xdir = QString().setNum(nextItem.x);
-				QString tilefile = QString().setNum(nextItem.y)+"."+fileExtension();
+				QString tilefile = servermgr.fileName(nextItem.y);
 
 				QDir::setCurrent(folder);
 				QDir dir;
@@ -447,11 +356,11 @@ void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 					dir.mkdir("cache");
 				}
 				dir.cd("cache");
-				if (!dir.exists(tileCacheFolder()))
+				if (!dir.exists(servermgr.tileCacheFolder()))
 				{
-					dir.mkdir(tileCacheFolder());
+					dir.mkdir(servermgr.tileCacheFolder());
 				}
-				dir.cd(tileCacheFolder());
+				dir.cd(servermgr.tileCacheFolder());
 
 				if(!dir.exists(zdir))
 				{
@@ -495,15 +404,16 @@ void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 	else
 	{
 		cout<<"network error: "<<error<<endl;
-		//if content is not available we dont want to keep requesting it
 		
 		if(found)
 		{
+			//if content is not available we dont want to keep requesting it
 			if (error == QNetworkReply::ContentNotFoundError)
 			{
 				unavailableTiles.insert(i.key(),1);
-				downloadQueue.remove(i.key());
 			}
+			//remove the item from queue and try again
+			downloadQueue.remove(i.key());
 			downloading = false;
 			downloadPicture();
 		}
@@ -556,7 +466,7 @@ void cacaMap::renderMap(QPainter &p)
 					QDir::setCurrent(folder);
 					//check path format (windows?)
 					QString path= getTilePath(tilesToRender.zoom,valx) ;
-					QString fileName = QString().setNum(j)+"."+fileExtension();
+					QString fileName = servermgr.fileName(j);
 					QDir::setCurrent(path);
 					QFile f(fileName);
 					if (f.open(QIODevice::ReadOnly))
@@ -566,7 +476,7 @@ void cacaMap::renderMap(QPainter &p)
 										}
 					else
 					{
-						cout<<"no file found "<<path.toStdString()<<endl;
+						cout<<"no file found "<<path.toStdString()<<fileName.toStdString()<<endl;
 					}
 				}
 				//check if it's in the list of unavailable tiles
@@ -584,7 +494,7 @@ void cacaMap::renderMap(QPainter &p)
 						t.zoom = tilesToRender.zoom;
 						t.x = valx;
 						t.y = j;
-						t.url = getTileUrl(tilesToRender.zoom,valx,j);
+						t.url = servermgr.getTileUrl(tilesToRender.zoom,valx,j);
 						//queue the image for download
 						downloadQueue.insert(tileid,t);
 					}

@@ -1,0 +1,57 @@
+<cacamap>
+	<server default="default">
+		<name>OpenStreetMap</name>
+		<url><![CDATA[http://tile.openstreetmap.org/%z/%x/%y.png]]></url>
+		<folder>osm</folder>
+		<filepath><![CDATA[/%z/%x/]]></filepath>
+		<tile><![CDATA[%y.png]]></tile>
+	</server>
+	<server>
+		<name>Google Satellite</name>
+		<url><![CDATA[http://khm3.google.com/kh/v=60&x=%x&y=%y&z=%z]]></url>
+		<folder>gsat</folder>
+		<filepath><![CDATA[/%z/%x/]]></filepath>
+		<tile><![CDATA[%y.]]></tile>
+	</server>
+	<server>
+		<name>Google Maps</name>
+		<url><![CDATA[http://mt1.google.com/vt/x=%x&y=%y&z=%z]]></url>
+		<folder>gmaps</folder>
+		<filepath><![CDATA[/%z/%x/]]></filepath>
+		<tile><![CDATA[%y.]]></tile>
+	</server>
+	<server>
+		<name>Fonecta/02</name>
+		<url><![CDATA[http://ed-map-fi.wide.basefarm.net/tiles//aerial/en_FI/%z/%x/%y.jpeg]]></url>
+		<folder>02</folder>
+		<filepath><![CDATA[/%z/%x/]]></filepath>
+		<tile><![CDATA[%y.jpeg]]></tile>
+	</server>
+	<server>
+		<name>Tiles@Home</name>
+		<url><![CDATA[http://tah.openstreetmap.org/Tiles/tile/%z/%x/%y.png]]></url>
+		<folder>tah</folder>
+		<filepath><![CDATA[/%z/%x/]]></filepath>
+		<tile><![CDATA[%y.png]]></tile>
+	</server>
+	<server>
+		<name>Maps for Free</name>
+		<url><![CDATA[http://maps-for-free.com/layer/relief/z%z/row%y/%z_%x-%y.jpg]]></url>
+		<folder>mff</folder>
+		<filepath><![CDATA[/%z/%x/]]></filepath>
+		<tile><![CDATA[%y.jpg]]></tile>
+	</server>
+
+	<!--
+	if you want to make use of the gorgeous maps from cloudmade.com you need
+	to get an API key and token as explained here:
+	http://developers.cloudmade.com/projects/show/auth
+	-->
+	<!--server>
+		<name>CloudMade(12006)</name>
+		<url><![CDATA[http://tile.cloudmade.com/YOUR_API_KEY/12006/256/%z/%x/%y.png?token=YOUR_TOKEN]]></url>
+		<folder>cm12006</folder>
+		<filepath><![CDATA[/%z/%x/]]></filepath>
+		<tile><![CDATA[%y.png]]></tile>
+	</server-->
+</cacamap> 

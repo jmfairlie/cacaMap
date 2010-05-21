@@ -30,6 +30,7 @@ testWidget::testWidget(QWidget* parent):QWidget(parent)
 	vlayout->addWidget(combo);
 
 	
+	connect(combo, SIGNAL(currentIndexChanged(int)),this, SLOT(setServer(int)));
 
 	hlayout = new QHBoxLayout();
 	hlayout->addWidget(slider);
@@ -45,11 +46,13 @@ testWidget::testWidget(QWidget* parent):QWidget(parent)
 
 void testWidget::populateCombo()
 {
-	
-	combo->addItem("Openstreetmaps",QVariant(1));
-	combo->addItem("Tiles at Home",QVariant(2));
-	combo->addItem("Google Maps",QVariant(3));
-	combo->addItem("Google Satellite",QVariant(4));
+
+	QStringList l = map->getServerNames();
+
+	for (int i=0; i<l.size(); i++)
+	{
+		combo->addItem(l.at(i),QVariant(i));
+	}
 }
 
 void testWidget::paintEvent(QPaintEvent*)
@@ -69,4 +72,9 @@ void testWidget::setZoom(int level)
 {
 	map->setZoom(level);
 	map->update();
+}
+
+void testWidget::setServer(int index)
+{
+	map->setServer(index);
 }

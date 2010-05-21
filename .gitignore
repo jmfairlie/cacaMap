@@ -4,13 +4,18 @@
 moc_*
 cacamap
 output
-#vim tempfiles
+#vim
+#tempfiles
 *.swp
 *.swo
 *.sw*
+#my session file
+session.vim
 #Doxygen stuff
 cache
 html
 latex
 #Makefiles should be regenerated everytime someone clones the repo cause the paths in there wont be valid to others
 Makefile
+#experimental tile server file
+tileservers2.xml

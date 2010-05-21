@@ -40,5 +40,6 @@ protected:
 	void paintEvent(QPaintEvent*);
 private slots:
 	void setZoom(int);
+	void setServer(int);
 };
 #endif

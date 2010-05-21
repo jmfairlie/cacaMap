@@ -19,17 +19,11 @@ GNU General Public License for more details.
 
 #ifndef CACAMAP_H
 #define CACAMAP_H
-
 #include <QtGui>
 #include <QtNetwork>
 #include <iostream>
 #include <vector>
-
-
-/*
-*tile server id
-*/
-enum SERVER_TYPE {SERVER_OSM, SERVER_TAH,SERVER_MFF, SERVER_KARTAT02,SERVER_GMAPS, SERVER_GLAYER, SERVER_GSAT};
+#include "servermanager.h"
 
 /**
 * The quint32 version of QPoint
@@ -126,7 +120,8 @@ public:
 	bool zoomOut();
 	bool setZoom(int level);
 	QPointF getGeoCoords();
-
+	QStringList getServerNames();
+	void setServer(int);
 
 private:
 	QPoint mouseAnchor;/**< used to keep track of the last mouse click location.*/
@@ -141,13 +136,10 @@ private:
 	QImage notAvailableTile;
         int minZoom;/**< Minimum zoom level (farthest away).*/
 	int maxZoom;/**< Maximum zoom level (closest).*/
-	SERVER_TYPE server;	
+	servermanager servermgr;	
 	void updateTilesToRender();
 	void loadCache();
-	QString getTileUrl(int, int, int);
 	QString getTilePath(int, qint32);
-	QString tileCacheFolder();
-	QString fileExtension();
 
 
 protected:
