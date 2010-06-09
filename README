@@ -1,6 +1,6 @@
 copyright 2010 Jean Fairlie
 jmfairlie@gmail.com
-CacaMap  is a Qt based  map browser widget that works with OSM tiles
+CacaMap  is a Qt based  map browser widget that works with a bunch of tile servers.
 
 CacaMap is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

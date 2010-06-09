@@ -3,7 +3,7 @@
 ######################################################################
 
 TEMPLATE = app
-TARGET = 
+CONFIG += qt debug	
 DEPENDPATH += .
 INCLUDEPATH += .
 QT+=network xml

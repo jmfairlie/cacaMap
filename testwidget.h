@@ -21,6 +21,8 @@ GNU General Public License for more details.
 
 using namespace std;
 
+
+
 class testWidget: public QWidget
 {
 Q_OBJECT
@@ -31,15 +33,14 @@ private:
 	void populateCombo();
 
 	myDerivedMap*  map;
-	QHBoxLayout * hlayout;
 	QVBoxLayout * vlayout;
 
-	QSlider * slider;
 	QComboBox * combo;
 protected:
 	void paintEvent(QPaintEvent*);
 private slots:
-	void setZoom(int);
 	void setServer(int);
 };
+
+
 #endif

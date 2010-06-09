@@ -16,12 +16,7 @@ GNU General Public License for more details.
 testWidget::testWidget(QWidget* parent):QWidget(parent)
 {
 	map = new myDerivedMap(this);
-	slider = new QSlider(Qt::Vertical,this);
-	slider->setTickPosition(QSlider::TicksBothSides);
-	slider->setMaximum(18);
-	slider->setMinimum(0);
-	slider->setSliderPosition(4);
-	connect(slider, SIGNAL(valueChanged(int)),this, SLOT(setZoom(int)));
+
 	
 
 	vlayout = new QVBoxLayout(this);
@@ -32,11 +27,8 @@ testWidget::testWidget(QWidget* parent):QWidget(parent)
 	
 	connect(combo, SIGNAL(currentIndexChanged(int)),this, SLOT(setServer(int)));
 
-	hlayout = new QHBoxLayout();
-	hlayout->addWidget(slider);
-	hlayout->addWidget(map);
+	vlayout->addWidget(map);
 
-	vlayout->addLayout(hlayout);
 
 	setLayout(vlayout);
 
@@ -63,18 +55,14 @@ void testWidget::paintEvent(QPaintEvent*)
 testWidget::~testWidget()
 {
 	delete map;
-	delete hlayout;
 	delete vlayout;
-	delete slider;
 }
 
-void testWidget::setZoom(int level)
-{
-	map->setZoom(level);
-	map->update();
-}
+
 
 void testWidget::setServer(int index)
 {
 	map->setServer(index);
 }
+
+

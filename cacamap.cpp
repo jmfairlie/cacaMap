@@ -25,6 +25,16 @@ longPoint::longPoint(quint32 _x, quint32 _y)
 	y = _y;
 }
 /**
+*empty constructor
+*/
+
+longPoint::longPoint()
+{
+	x = 0;
+	y = 0;
+}
+
+/**
 * Converts a geo coordinate to map pixels
 * @param geocoord has the longitude and latitude in degrees.
 * @param zoom is the zoom level, ranges from cacaMap::minZoom (out) to maxZoom (in).
@@ -78,6 +88,7 @@ QPointF myMercator::pixelToGeoCoord(longPoint const &pixelcoord, int zoom, int t
 */
 cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 {
+	cout<<"cacamap constructor"<<endl;
 	if (!servermgr.loadConfigFile("tileservers.xml"))
 	{
 		std::cout<<"error loading server file."<<std::endl;
@@ -87,15 +98,17 @@ cacaMap::cacaMap(QWidget* parent):QWidget(parent)
 	minZoom = 0;
 	folder = QDir::currentPath();
 	loadCache();
-	geocoords = QPointF(23.5,61.5);
+	geocoords = QPointF(23.8564,61.4667);
 	downloading = false;
 	tileSize = 256;
-	zoom = 4;
+	zoom = 14;
 	manager = new QNetworkAccessManager(this);
 	loadingAnim.setFileName("loading.gif");
 	loadingAnim.setScaledSize(QSize(tileSize,tileSize));
 	loadingAnim.start();
 	notAvailableTile.load("notavailable.jpeg");
+	imgBuffer = new QPixmap(size());
+	buffzoomrate = 1.0;
 }
 
 /**
@@ -117,7 +130,8 @@ bool cacaMap::zoomIn()
 	if (zoom < maxZoom)
 	{
 		zoom++;
-		updateTilesToRender();
+		downloadQueue.clear();
+		updateContent();
 		return true;
 	}
 	return false;
@@ -131,7 +145,8 @@ bool cacaMap::zoomOut()
 	if (zoom > minZoom)
 	{
 		zoom--;
-		updateTilesToRender();
+		downloadQueue.clear();
+		updateContent();
 		return true;
 	}
 	return false;
@@ -146,7 +161,8 @@ bool cacaMap::setZoom(int level)
 	if (level>= minZoom && level <= maxZoom)
 	{
 		zoom = level;
-		updateTilesToRender();
+		downloadQueue.clear();
+		updateContent();
 		return true;
 	}
 	return false;
@@ -175,35 +191,16 @@ void cacaMap::setServer(int index)
 	downloadQueue.clear();
 	loadCache();
 	downloading = false;
+	updateContent();
 	update();
 }
-
 /**
-Saves the screen coordinates of the last click
-This is used for scrolling the map
-@see cacaMap::mouseMoveEvent()
+*   @return current zoom level
 */
-void cacaMap::mousePressEvent(QMouseEvent* e)
+int cacaMap::getZoom()
 {
-	mouseAnchor = e->pos();
-}
-
-/**
-Calculates the length of the mouse drag and
-translates it into a new coordinate, map is rerendered
-*/
-void cacaMap::mouseMoveEvent(QMouseEvent* e)
-{
-	QPoint delta = e->pos()- mouseAnchor;
-	mouseAnchor = e->pos();
-	longPoint p = myMercator::geoCoordToPixel(geocoords,zoom,tileSize);
-	
-	p.x-= delta.x();
-	p.y-= delta.y();
-	geocoords = myMercator::pixelToGeoCoord(p,zoom,tileSize);
-	updateTilesToRender();
-	update();
-}
+	return zoom;
+}	
 
 /**
 *@param zoom zoom level
@@ -215,6 +212,59 @@ QString cacaMap::getTilePath(int zoom,qint32 x)
 {
 	return "cache/"+servermgr.tileCacheFolder()+servermgr.filePath(zoom,x);
 }
+
+/**
+* @return image for temporarily replacing a tile that is downloading and currently unavailable
+* The 'patch' is a subsection of an available tile from a lower zoom level.
+* The algorithm tries to find a suitable tile starting from level zoom -1, until level 0.
+* The higher the zoom level difference the more pixelated the patch will be.
+*/
+QPixmap cacaMap::getTilePatch(int zoom, quint32 x, quint32 y, int offx, int offy, int tsize)
+{
+	//dont go beyond level 0 and 
+	//dont use patches smaller than 16 px. They are unintelligible anyways.
+	if (zoom>0 && tsize>=16*2)
+	{
+		int parentx, parenty, offsetx, offsety;
+		QString tileid;
+		QPixmap patch;
+		QString sz,sx,sy;
+		parentx = x/2;
+		parenty = y/2;
+		sz.setNum(zoom-1);
+		sx.setNum(parentx);
+		sy.setNum(parenty);
+		offsetx = offx/2 + (x%2)*tileSize/2;
+		offsety = offy/2 + (y%2)*tileSize/2;
+		tileid = sz+"."+sx+"."+sy;
+		if (tileCache.contains(tileid))
+		{
+			//render the tile
+			QDir::setCurrent(folder);
+			QString path= getTilePath(zoom-1,parentx) ;
+			QString fileName = servermgr.fileName(parenty);
+			QDir::setCurrent(path);
+			QFile f(fileName);
+			if (f.open(QIODevice::ReadOnly))
+			{
+				patch.loadFromData(f.readAll());
+				f.close();
+				return patch.copy(offsetx,offsety,tsize/2,tsize/2).scaledToHeight(tileSize);
+			}
+			else
+			{
+				cout<<"no file found "<<path.toStdString()<<fileName.toStdString()<<endl;
+			}
+		}
+		else
+		{
+			return getTilePatch(zoom-1,parentx,parenty,offsetx,offsety,tsize/2);
+		}
+	}
+	return loadingAnim.currentPixmap();
+}
+
+
 
 /**
 Starts downloading the next %tile in the queue
@@ -242,7 +292,7 @@ void cacaMap::downloadPicture()
 		}
 		else
 		{
-			cout<<"no items in the queue"<<endl;
+		//	cout<<"no items in the queue"<<endl;
 		}
 	}
 	else
@@ -300,7 +350,6 @@ Slot to keep track of download progress
 */
 void cacaMap::slotDownloadProgress(qint64 _bytesReceived, qint64 _bytesTotal)
 {
-	update();
 }
 
 /**
@@ -329,7 +378,6 @@ void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 
 	if (error == QNetworkReply::NoError)
 	{
-		cout<<"no error"<<endl;
 		qint64 bytes = _reply->bytesAvailable();
 
 		if (bytes)
@@ -387,6 +435,9 @@ void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 				
 				//add it to cache
 				tileCache.insert(kk,1);
+				//update with new tile
+				updateBuffer();
+				update();
 			}
 			else
 			{
@@ -394,10 +445,11 @@ void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 			}
 			downloading = false;
 			downloadPicture();
+			
 		}
 		else
 		{
-			cout<<"no data"<<endl;
+			//cout<<"no data"<<endl;
 		}
 		update();
 	}
@@ -432,83 +484,31 @@ Widget resize event handler
 */
 void cacaMap::resizeEvent(QResizeEvent* event)
 {
-	updateTilesToRender();
+	delete imgBuffer;
+	imgBuffer = new QPixmap(size());
+	updateContent();
 }
 
 /**
-Renders map based on range of visible tiles
+* Blits buffer to widget
 */
 void cacaMap::renderMap(QPainter &p)
 {
-	for (qint32 i= tilesToRender.left;i<= tilesToRender.right; i++)
+	//QRect dest(QPoint(0,0), size());
+	if (buffzoomrate<1.0)
 	{
-		for (qint32 j=tilesToRender.top ; j<= tilesToRender.bottom; j++)
-		{
-			QString x;
-			QString y;
-			//wrap around the tiles horizontally if i is outside [0,2^zoom]
-			qint32 numtiles = 1<<tilesToRender.zoom;
-			qint32 valx =((i<0)*numtiles + i%numtiles)%numtiles;
-			
-			x.setNum(valx);
-			
-			QImage image;
-			int posx = (i-tilesToRender.left)*tileSize - tilesToRender.offsetx;
-			int posy =  (j-tilesToRender.top)*tileSize - tilesToRender.offsety;
-			//dont try to render tiles with y coords outside range
-			//cause we cant do vertical wrapping!
-			if (j>=0 && j<numtiles)
-			{
-				QString tileid = QString().setNum(tilesToRender.zoom) +"."+x+"."+QString().setNum(j);
-				if (tileCache.contains(tileid))
-				{
-					//render the tile
-					QDir::setCurrent(folder);
-					//check path format (windows?)
-					QString path= getTilePath(tilesToRender.zoom,valx) ;
-					QString fileName = servermgr.fileName(j);
-					QDir::setCurrent(path);
-					QFile f(fileName);
-					if (f.open(QIODevice::ReadOnly))
-					{
-						image.loadFromData(f.readAll());
-						f.close();
-										}
-					else
-					{
-						cout<<"no file found "<<path.toStdString()<<fileName.toStdString()<<endl;
-					}
-				}
-				//check if it's in the list of unavailable tiles
-				else if (unavailableTiles.contains(tileid))
-				{
-					image = notAvailableTile;
-				}
-				//the tile is not cached so download it
-				else
-				{
-					//check that the image hasnt been queued already
-					if (!downloadQueue.contains(tileid))
-					{
-						tile t;
-						t.zoom = tilesToRender.zoom;
-						t.x = valx;
-						t.y = j;
-						t.url = servermgr.getTileUrl(tilesToRender.zoom,valx,j);
-						//queue the image for download
-						downloadQueue.insert(tileid,t);
-					}
-					image = loadingAnim.currentImage();
-				}
-				p.drawImage(posx,posy,image);
-			}
-			//p.drawRect(posx,posy,tileSize, tileSize);
-		}
+		int ox = width()*(1-buffzoomrate)/2;
+		int oy = height()*(1-buffzoomrate)/2;
+		QRect src(QPoint(ox,oy),size()*buffzoomrate); 
+		
+		tmpbuff= imgBuffer->copy(src).scaled(size(),Qt::KeepAspectRatio);
+
+		p.drawPixmap(0,0,tmpbuff);
+		//p.drawPixmap(dest, *imgBuffer,src);//this is shorter but slower
 	}
-	p.drawRect(0,0,width()-1, height()-1);
-	if (!downloading)
+	else
 	{
-		downloadPicture();
+		p.drawPixmap(0,0,*imgBuffer);
 	}
 }
 /**
@@ -526,6 +526,7 @@ destructor
 cacaMap::~cacaMap()
 {
 	delete manager;
+	delete imgBuffer;
 }
 /**
 Figures out which tiles are visible
@@ -567,4 +568,91 @@ void cacaMap::updateTilesToRender()
 	tilesToRender.offsetx = globaloffsetx;
 	tilesToRender.offsety = globaloffsety;
 	tilesToRender.zoom = zoom;
+}
+/**
+* Blits visible tiles buffer
+*/
+void cacaMap::updateBuffer()
+{
+	QPainter p(imgBuffer);
+	imgBuffer->fill(Qt::gray);
+	for (qint32 i= tilesToRender.left;i<= tilesToRender.right; i++)
+	{
+		for (qint32 j=tilesToRender.top ; j<= tilesToRender.bottom; j++)
+		{
+			QString x;
+			QString y;
+			//wrap around the tiles horizontally if i is outside [0,2^zoom]
+			qint32 numtiles = 1<<tilesToRender.zoom;
+			qint32 valx =((i<0)*numtiles + i%numtiles)%numtiles;
+			x.setNum(valx);
+			QPixmap image;
+			int posx = (i-tilesToRender.left)*tileSize - tilesToRender.offsetx;
+			int posy =  (j-tilesToRender.top)*tileSize - tilesToRender.offsety;
+			//dont try to render tiles with y coords outside range
+			//cause we cant do vertical wrapping!
+			if (j>=0 && j<numtiles)
+			{
+				QString tileid = QString().setNum(tilesToRender.zoom) +"."+x+"."+QString().setNum(j);
+				if (tileCache.contains(tileid))
+				{
+					//render the tile
+					QDir::setCurrent(folder);
+					//check path format (windows?)
+					QString path= getTilePath(tilesToRender.zoom,valx) ;
+					QString fileName = servermgr.fileName(j);
+					QDir::setCurrent(path);
+					QFile f(fileName);
+					if (f.open(QIODevice::ReadOnly))
+					{
+						image.loadFromData(f.readAll());
+						f.close();
+					}
+					else
+					{
+						cout<<"no file found "<<path.toStdString()<<fileName.toStdString()<<endl;
+					}
+				}
+				//check if it's in the list of unavailable tiles
+				else if (unavailableTiles.contains(tileid))
+				{
+					image = notAvailableTile;
+				}
+				//the tile is not cached so download it
+				else
+				{
+					//check that the image hasnt been queued already
+					if (!downloadQueue.contains(tileid))
+					{
+						tile t;
+						t.zoom = tilesToRender.zoom;
+						t.x = valx;
+						t.y = j;
+						t.url = servermgr.getTileUrl(tilesToRender.zoom,valx,j);
+						//queue the image for download
+						downloadQueue.insert(tileid,t);
+					}
+					//crop a tile from a lower zoom level and use it as a patch(a la google maps)
+					//while the tile is downloading	
+					image = getTilePatch(tilesToRender.zoom,valx,j,0,0,tileSize);
+				}
+				p.drawPixmap(posx,posy,image);
+			}
+		}
+	}
+	p.drawRect(0,0,width()-1, height()-1);
+	if (!downloading)
+	{
+		downloadPicture();
+	}
+}
+/**
+* calls the following two functions
+* @see cacaMap::updateTilesToRender
+* @see cacaMap::updateBuffer
+*/
+void cacaMap::updateContent()
+{
+	updateTilesToRender();
+	updateBuffer();
 }

@@ -34,6 +34,7 @@ struct longPoint
 	quint32 x;/**< x coord. */
 	quint32 y;/**< y coord.*/
 	longPoint(quint32,quint32);
+	longPoint();
 };
 
 /**
@@ -79,31 +80,6 @@ struct tile
 Main map widget
 */
 
-/** @note
-
-INITIAL REQUIREMENTS:
-
-Class should retrieve the tiles from the specified source (e.g. OSM, google)
-and cache them in the hard drive.
-Default source should be OSM.
-Class should keep track of which tiles are already on the cache in order to minimize downloads.
-
-The cache should have a maximum size (e.g 1, 2MB), when reached, tiles not in use should be deleted
-
-The current location should be depicted always in the middle of the widget.
-If Widget is bigger than the tiles to be shown or one of the edges is visible 
-then tiles should be repeated horizontally and/or vertically as needed
-
-Map should be draggable, when dragging or zooming images that are not cached should be queued 
-for download, and a 'loading' place holder image should be shown in their place
-Images that are not available should be marked so they are not requested further, an 
-a 'not available' image should be showed instead . 
-
-
-pre downloading tiles for all zoom levels for a specific geocoordinate should be evaluated, 
-based on the widgets performance. Maybe different policies could be implemented to handle 
-different situations e.g. connection speeds.
-*/
 
 class cacaMap : public QWidget
 {
@@ -115,16 +91,15 @@ public:
 
 	virtual ~cacaMap();
 	void setGeoCoords(QPointF);
-	void renderMap(QPainter &);
 	bool zoomIn();
 	bool zoomOut();
 	bool setZoom(int level);
 	QPointF getGeoCoords();
 	QStringList getServerNames();
 	void setServer(int);
+	int getZoom();
 
 private:
-	QPoint mouseAnchor;/**< used to keep track of the last mouse click location.*/
 	QNetworkAccessManager *manager;/**< manages http requests. */
 	tileSet tilesToRender;/**< range of visible tiles. */
 	QHash<QString,int> tileCache;/**< list of cached tiles (in HDD). */
@@ -133,27 +108,34 @@ private:
 	bool downloading;/**< flag that indicates if there is a download going on. */
 	QString folder;/**< root application folder. */
 	QMovie loadingAnim;/**< to show a 'loading' animation for yet unavailable tiles. */
-	QImage notAvailableTile;
-        int minZoom;/**< Minimum zoom level (farthest away).*/
-	int maxZoom;/**< Maximum zoom level (closest).*/
+	QPixmap notAvailableTile;
 	servermanager servermgr;	
-	void updateTilesToRender();
+
+	void renderMap(QPainter &);
+	void downloadPicture();
 	void loadCache();
 	QString getTilePath(int, qint32);
-
+	QPixmap getTilePatch(int,quint32,quint32,int,int,int);
 
 protected:
 	int zoom;/**< Map zoom level. */
+	int minZoom;/**< Minimum zoom level (farthest away).*/
+	int maxZoom;/**< Maximum zoom level (closest).*/
+
 	int tileSize; /**< size in px of the square %tile. */
 	quint32 cacheSize;/**< current %tile cache size in bytes. */
 	//check QtMobility QGeoCoordinate
 	QPointF geocoords; /**< current longitude and latitude. */
+	QPixmap* imgBuffer;
+	QPixmap tmpbuff;
+	float buffzoomrate;
 
+	bool bufferDirty; /**< image buffer needs to be updated. */	
 	void resizeEvent(QResizeEvent*);
 	void paintEvent(QPaintEvent *);
-	void mousePressEvent(QMouseEvent*);
-	void mouseMoveEvent(QMouseEvent*);
-	void downloadPicture();
+	void updateTilesToRender();
+	void updateBuffer();
+	void updateContent();
 
 protected slots:
 	void slotDownloadProgress(qint64, qint64);
