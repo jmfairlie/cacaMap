@@ -26,6 +26,6 @@ void myDerivedMap::paintEvent(QPaintEvent *e)
 	cacaMap::paintEvent(e);
 	QPainter p(this);
 	//you can draw here whatever you want
-	//it will show up over the map
+	//it will show up overlaid on the map
 	p.drawSomething(...)
 }
