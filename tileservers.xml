@@ -1,14 +1,14 @@
 <cacamap>
 	<server default="default">
 		<name>OpenStreetMap</name>
-		<url><![CDATA[http://tile.openstreetmap.org/%z/%x/%y.png]]></url>
+		<url><![CDATA[https://a.tile.openstreetmap.de/%z/%x/%y.png]]></url>
 		<folder>osm</folder>
 		<filepath><![CDATA[/%z/%x/]]></filepath>
 		<tile><![CDATA[%y.png]]></tile>
 	</server>
 	<server>
 		<name>Google Satellite</name>
-		<url><![CDATA[http://khm3.google.com/kh/v=60&x=%x&y=%y&z=%z]]></url>
+		<url><![CDATA[http://khms2.google.com/kh/v=862&x=%x&y=%y&z=%z]]></url>
 		<folder>gsat</folder>
 		<filepath><![CDATA[/%z/%x/]]></filepath>
 		<tile><![CDATA[%y.]]></tile>
@@ -21,37 +21,38 @@
 		<tile><![CDATA[%y.]]></tile>
 	</server>
 	<server>
-		<name>Fonecta/02</name>
-		<url><![CDATA[http://ed-map-fi.wide.basefarm.net/tiles//aerial/en_FI/%z/%x/%y.jpeg]]></url>
-		<folder>02</folder>
+		<name>Wikimedia</name>
+		<url><![CDATA[https://maps.wikimedia.org/osm-intl/%z/%x/%y.png]]></url>
+		<folder>wikimedia</folder>
 		<filepath><![CDATA[/%z/%x/]]></filepath>
-		<tile><![CDATA[%y.jpeg]]></tile>
+		<tile><![CDATA[%y.]]></tile>
 	</server>
 	<server>
-		<name>Tiles@Home</name>
-		<url><![CDATA[http://tah.openstreetmap.org/Tiles/tile/%z/%x/%y.png]]></url>
-		<folder>tah</folder>
+		<name>wmflabs(bw-mapnik)</name>
+		<url><![CDATA[https://tiles.wmflabs.org/bw-mapnik/%z/%x/%y.png]]></url>
+		<folder>wmflabs</folder>
 		<filepath><![CDATA[/%z/%x/]]></filepath>
-		<tile><![CDATA[%y.png]]></tile>
+		<tile><![CDATA[%y.]]></tile>
 	</server>
 	<server>
-		<name>Maps for Free</name>
-		<url><![CDATA[http://maps-for-free.com/layer/relief/z%z/row%y/%z_%x-%y.jpg]]></url>
-		<folder>mff</folder>
+		<name>stamen(toner)</name>
+		<url><![CDATA[http://d.tile.stamen.com/toner/%z/%x/%y.png]]></url>
+		<folder>stamen_toner</folder>
 		<filepath><![CDATA[/%z/%x/]]></filepath>
-		<tile><![CDATA[%y.jpg]]></tile>
+		<tile><![CDATA[%y.]]></tile>
 	</server>
-
-	<!--
-	if you want to make use of the gorgeous maps from cloudmade.com you need
-	to get an API key and token as explained here:
-	http://developers.cloudmade.com/projects/show/auth
-	-->
-	<!--server>
-		<name>CloudMade(12006)</name>
-		<url><![CDATA[http://tile.cloudmade.com/YOUR_API_KEY/12006/256/%z/%x/%y.png?token=YOUR_TOKEN]]></url>
-		<folder>cm12006</folder>
+	<server>
+		<name>stamen(watercolor)</name>
+		<url><![CDATA[http://b.tile.stamen.com/watercolor/%z/%x/%y.jpg]]></url>
+		<folder>stamen_watercolor</folder>
 		<filepath><![CDATA[/%z/%x/]]></filepath>
-		<tile><![CDATA[%y.png]]></tile>
-	</server-->
+		<tile><![CDATA[%y.]]></tile>
+	</server>
+	<server>
+		<name>stamen(terrain)</name>
+		<url><![CDATA[http://c.tile.stamen.com/terrain/%z/%x/%y.png]]></url>
+		<folder>stamen_terrain</folder>
+		<filepath><![CDATA[/%z/%x/]]></filepath>
+		<tile><![CDATA[%y.]]></tile>
+	</server>
 </cacamap> 
