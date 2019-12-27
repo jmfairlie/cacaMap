@@ -455,7 +455,7 @@ void cacaMap::slotDownloadReady(QNetworkReply * _reply)
 	}
 	else
 	{
-		cout<<"network error: "<<error<<endl;
+		cout<<"network error: ("<<error<<") "<<_reply->errorString().toStdString()<<endl;
 		
 		if(found)
 		{
