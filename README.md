@@ -4,9 +4,10 @@ CacaMap  is a Qt based  map browser widget that works with a bunch of tile serve
 
 ## Build & Run
 ```bash
-# assuming you already have qt4 installed, probably would work with other qt versions but haven't tested it.
+# assuming you already have qt4 installed, probably would work with other qt
+#versions but haven't tested it.
 # this will generate the Makefile
-qmake -qt=
+qmake -qt=4
 make
 ./cacamap
 ```
